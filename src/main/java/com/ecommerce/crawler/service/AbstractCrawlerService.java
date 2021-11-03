@@ -5,9 +5,9 @@ import com.ecommerce.crawler.model.dto.CrawlerServiceDTO;
 import lombok.Getter;
 
 import javax.annotation.PostConstruct;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Getter
 public abstract class AbstractCrawlerService {
@@ -15,10 +15,14 @@ public abstract class AbstractCrawlerService {
     protected ConcurrentHashMap<String, Boolean> goodsMap;
     protected CrawlerServiceDTO crawlerServiceDTO;
 
+
+
     @PostConstruct
     public void init(){
+        //coolpc using
         goodsMap = new ConcurrentHashMap<>();
         crawlerServiceDTO = CrawlerServiceDTO.builder().build();
+
     }
     public List<String> doCrawler(){
         crawler();

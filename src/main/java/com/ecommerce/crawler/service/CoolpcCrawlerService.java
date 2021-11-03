@@ -30,9 +30,8 @@ import java.util.stream.Collectors;
 public class CoolpcCrawlerService extends AbstractCrawlerService implements ICrawlerService{
 
     @Getter
-    private final String StoreTitle = "罰站屋";
+    private final String StoreTitle = "【罰站屋】";
     private final String ValidKeyWord = "限組";
-    AtomicInteger cut = new AtomicInteger(0);
 
     @Resource
     RestTemplate restTemplate;
@@ -45,7 +44,7 @@ public class CoolpcCrawlerService extends AbstractCrawlerService implements ICra
       List<Node> vgaGroupList = doc.select("TR").get(26).child(2).childNode(1).childNodes();
       List<Node> targetGroupList =  vgaGroupList.subList(14, vgaGroupList.size()-1);
 
-      final Map<BigInteger, String> crawlerRecorderMap = new ConcurrentHashMap<>();
+      final Map<BigInteger, String> coolpcRecorderMap = new ConcurrentHashMap<>();
 
       Flux.fromStream(targetGroupList.parallelStream())
               .subscribe(node -> {
@@ -58,13 +57,13 @@ public class CoolpcCrawlerService extends AbstractCrawlerService implements ICra
                           ){
                           BigInteger goodsIdx = BigInteger.valueOf(Long.valueOf(resultNode.attributes().get("value")));
                           String goodsText = resultNode.childNode(0).outerHtml();
-                          crawlerRecorderMap.put(goodsIdx, goodsText);
+                          coolpcRecorderMap.put(goodsIdx, goodsText);
                           log.info("resultNode: {}", resultNode);
                       }
                   }
               });
-        crawlerServiceDTO.setCrawlerRecorderMap(crawlerRecorderMap);
-        log.info("crawlerRecorderMap: {}", crawlerRecorderMap);
+        crawlerServiceDTO.setCrawlerRecorderMap(coolpcRecorderMap);
+        log.info("coolpcRecorderMap: {}", coolpcRecorderMap);
     }
 
     @Override
@@ -85,7 +84,7 @@ public class CoolpcCrawlerService extends AbstractCrawlerService implements ICra
                         }
                     }
                 });
-            }
+        }
             crawlerServiceDTO.setEffectiveData(effectiveData);
             log.info("effectiveData size: {}", effectiveData.size());
             log.info("goodsMap size: {}", goodsMap.size());
