@@ -50,13 +50,17 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
         MultiValueMap<String, String>uriVars = new LinkedMultiValueMap<>();
         uriVars.add("cn","4302000169");
         uriVars.add("page", page.toString());
-        uriVars.add("sortType", "3");
+        uriVars.add("sortType", "5");
         uriVars.add("imgSH", "fourCardStyle");
         UriComponents uriComponents = UriComponentsBuilder.fromUriString(mobile_momo_goods_url).queryParams(uriVars).build();
         log.info("uri :{}", uriComponents.toUriString());
         final String url = uriComponents.toUriString();
 
-        ResponseEntity<String> resp = restTemplate.exchange(url, HttpMethod.GET, HttpEntity.EMPTY, String.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setCacheControl(CacheControl.noCache());
+        HttpEntity httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> resp = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
         log.debug("resp body:{}", resp.getBody());
         Document doc  = Jsoup.parse(resp.getBody());
         Elements elements = doc.select("a.productInfo");
@@ -79,9 +83,9 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
     @SneakyThrows
     public void crawler() {
         ConcurrentMap<String, String> momoRecorderMap =  new ConcurrentHashMap<>();
-        for(int page = 1 ; page < 6; page++){
+        for(int page = 1 ; page < 7; page++){
             crawlerAllPage.apply(page, momoRecorderMap);
-            Thread.sleep(1000l);
+            Thread.sleep(300l);
         }
         log.info("momoRecorderMap size: {}", momoRecorderMap.size());
         crawlerServiceDTO.setMomoCrawlerRecorderMap(momoRecorderMap);

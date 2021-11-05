@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @Class: CrawlerJob.java
@@ -33,6 +34,8 @@ public class CrawlerJob {
     @Resource
     TelegramMessager messager;
 
+    private boolean momoFirstLoop = true;
+
 //    @Scheduled(cron = "0 05 15 * * MON-FRI")
 //    public void rebuild_stock() {
 //    	log.info("Rebuild Cache for daily job");
@@ -42,20 +45,23 @@ public class CrawlerJob {
 //	    	.subscribe();
 //    }
 
-    @Scheduled(initialDelay=16000, fixedRate=30000)
+    @Scheduled(initialDelay=19000, fixedRate=6000)
     public void momoJob() {
         log.info("crawler momo for fixed time");
         List<String> resultData = momoCrawlerService.doCrawler();
-        if(!resultData.isEmpty()){
+        //do not send message at first time
+        if(!resultData.isEmpty() && !momoFirstLoop){
             resultData.forEach(item->{
                 try {
                     messager.send(String.format("%s\n%s",momoCrawlerService.getStoreTitle(), item));
                     Thread.sleep(2500l);
+                    log.info("has been sent :{}", item);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             });
         }
+        momoFirstLoop =false;
     }
 
     @Scheduled(initialDelay=9000, fixedRate=30000)
