@@ -2,7 +2,9 @@ package com.ecommerce.crawler.job;
 
 import com.ecommerce.crawler.messager.TelegramMessager;
 import com.ecommerce.crawler.service.CoolpcCrawlerService;
+import com.ecommerce.crawler.service.MomoCrawlerService;
 import com.ecommerce.crawler.service.SinyaCrawlerService;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -26,6 +28,9 @@ public class CrawlerJob {
     SinyaCrawlerService sinyaCrawlerService;
 
     @Resource
+    MomoCrawlerService momoCrawlerService;
+
+    @Resource
     TelegramMessager messager;
 
 //    @Scheduled(cron = "0 05 15 * * MON-FRI")
@@ -37,7 +42,23 @@ public class CrawlerJob {
 //	    	.subscribe();
 //    }
 
-    @Scheduled(initialDelay=5000, fixedRate=30000)
+    @Scheduled(initialDelay=16000, fixedRate=30000)
+    public void momoJob() {
+        log.info("crawler momo for fixed time");
+        List<String> resultData = momoCrawlerService.doCrawler();
+        if(!resultData.isEmpty()){
+            resultData.forEach(item->{
+                try {
+                    messager.send(String.format("%s\n%s",momoCrawlerService.getStoreTitle(), item));
+                    Thread.sleep(2500l);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+
+    @Scheduled(initialDelay=9000, fixedRate=30000)
     public void sinyaJob() {
         log.info("crawler sinya for fixed time");
         List<String> resultData = sinyaCrawlerService.doCrawler();
@@ -51,7 +72,7 @@ public class CrawlerJob {
         }
     }
 
-    @Scheduled(initialDelay=1000, fixedRate=30000)
+    @Scheduled(initialDelay=3000, fixedRate=30000)
     public void coolpcJob() {
     	log.info("crawler coolpc for fixed time");
         List<String> resultData = coolpcCrawlerService.doCrawler();

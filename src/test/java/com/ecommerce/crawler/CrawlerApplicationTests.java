@@ -1,25 +1,30 @@
 package com.ecommerce.crawler;
 
 import com.ecommerce.crawler.messager.TelegramMessager;
-import com.ecommerce.crawler.model.resp.SinyaResp;
-import com.ecommerce.crawler.model.vo.SinyaProdVO;
 import com.ecommerce.crawler.service.CoolpcCrawlerService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.Resource;
-import java.math.BigInteger;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Predicate;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
@@ -34,6 +39,42 @@ public class CrawlerApplicationTests {
 
     @Resource
     RestTemplate restTemplate;
+
+//    @Test
+//    @SneakyThrows
+//    public void momo() {
+//        final String soldout_keyword = "forso";
+//        final String mobile_momo_url = "https://m.momoshop.com.tw/";
+//        final String mobile_momo_goods_url = "https://m.momoshop.com.tw/cateGoods.momo";
+//        final String lineSeparator = System.getProperty("line.separator");
+//        final MultiValueMap<String, String> uriVars = new LinkedMultiValueMap<>();
+//        uriVars.add("cn","4302000169");
+//        uriVars.add("page", "1");
+//        uriVars.add("sortType", "3");
+//        uriVars.add("imgSH", "fourCardStyle");
+//
+//        UriComponents uriComponents = UriComponentsBuilder.fromUriString(mobile_momo_goods_url).queryParams(uriVars).build();
+//        log.info("uri :{}", uriComponents.toUriString());
+//        final String url = uriComponents.toUriString();
+//
+//        ResponseEntity<String> resp = restTemplate.exchange(url, HttpMethod.GET, HttpEntity.EMPTY, String.class);
+//        log.debug("resp body:{}", resp.getBody());
+//        Document doc  = Jsoup.parse(resp.getBody());
+//        Elements elements = doc.select("a.productInfo");
+//
+//        StringBuffer sb = new StringBuffer();
+//        for(Element element: elements){
+//            if(!element.childNode(7).outerHtml().contains(soldout_keyword)){
+//                String prodName = element.attr("title");
+//                String prodPrice = element.select("b.price").text();
+//                String prodUrl  = element.attr("href");
+//                String fullInfo = prodPrice +"_"+ prodName;
+//                String fullUrl  = mobile_momo_url + prodUrl;
+//                log.info("{} {}", fullInfo, fullUrl);
+//                messager.send(String.format("%s %s /n", fullInfo, fullUrl));
+//            }
+//        }
+//    }
 
 //    @Test
 //    @SneakyThrows

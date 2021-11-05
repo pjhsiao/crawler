@@ -12,6 +12,8 @@ import java.util.Map;
 public class CrawlerServiceDTO {
     private String rawData;
     private Map<BigInteger, String> crawlerRecorderMap;
+    //for momo
+    private Map<String, String> momoCrawlerRecorderMap;
     //effectiveData will be sand finally
     private List<String> effectiveData;
 }
