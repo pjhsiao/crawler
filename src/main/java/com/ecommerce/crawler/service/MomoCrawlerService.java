@@ -33,6 +33,8 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+//https://m.momoshop.com.tw/cateGoods.momo?cn=4302000169&page=1&sortType=5&imgSH=fourCardStyle
+//https://m.momoshop.com.tw/cateGoods.momo?cn=4302000216&page=1&sortType=4&imgSH=fourCardType
 
 @Service
 @Slf4j
@@ -46,12 +48,7 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
     @Resource
     RestTemplate restTemplate;
 
-    BiFunction<Integer, ConcurrentMap<String, String>, Void> crawlerAllPage = (page, momoRecorderMap) ->{
-        MultiValueMap<String, String>uriVars = new LinkedMultiValueMap<>();
-        uriVars.add("cn","4302000169");
-        uriVars.add("page", page.toString());
-        uriVars.add("sortType", "5");
-        uriVars.add("imgSH", "fourCardStyle");
+    BiFunction<MultiValueMap<String, String>, ConcurrentMap<String, String>, Void> crawlerAllPage = (uriVars, momoRecorderMap) ->{
         UriComponents uriComponents = UriComponentsBuilder.fromUriString(mobile_momo_goods_url).queryParams(uriVars).build();
         log.info("uri :{}", uriComponents.toUriString());
         final String url = uriComponents.toUriString();
@@ -83,9 +80,21 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
     @SneakyThrows
     public void crawler() {
         ConcurrentMap<String, String> momoRecorderMap =  new ConcurrentHashMap<>();
-        for(int page = 1 ; page < 7; page++){
-            crawlerAllPage.apply(page, momoRecorderMap);
-            Thread.sleep(300l);
+        for(int page = 1 ; page < 6; page++){
+            MultiValueMap<String, String>uriVars = new LinkedMultiValueMap<>();
+            uriVars.add("cn","4302000169");
+            uriVars.add("page", String.valueOf(page));
+            uriVars.add("sortType", "5");
+            uriVars.add("imgSH", "fourCardStyle");
+            crawlerAllPage.apply(uriVars, momoRecorderMap);
+            Thread.sleep(200l);
+            MultiValueMap<String, String>uriVars2 = new LinkedMultiValueMap<>();
+            uriVars2.add("cn","4302000216");
+            uriVars2.add("page", String.valueOf(page));
+            uriVars2.add("sortType", "4");
+            uriVars2.add("imgSH", "fourCardStyle");
+            crawlerAllPage.apply(uriVars2, momoRecorderMap);
+            Thread.sleep(200l);
         }
         log.info("momoRecorderMap size: {}", momoRecorderMap.size());
         crawlerServiceDTO.setMomoCrawlerRecorderMap(momoRecorderMap);

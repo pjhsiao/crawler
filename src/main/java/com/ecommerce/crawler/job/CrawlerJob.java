@@ -45,7 +45,7 @@ public class CrawlerJob {
 //	    	.subscribe();
 //    }
 
-    @Scheduled(initialDelay=19000, fixedRate=6000)
+    @Scheduled(initialDelay=888, fixedRate=8888)
     public void momoJob() {
         log.info("crawler momo for fixed time");
         List<String> resultData = momoCrawlerService.doCrawler();
@@ -78,7 +78,7 @@ public class CrawlerJob {
         }
     }
 
-    @Scheduled(initialDelay=3000, fixedRate=30000)
+    @Scheduled(initialDelay=6000, fixedRate=30000)
     public void coolpcJob() {
     	log.info("crawler coolpc for fixed time");
         List<String> resultData = coolpcCrawlerService.doCrawler();
