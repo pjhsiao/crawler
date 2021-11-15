@@ -49,7 +49,7 @@ public class CrawlerJob {
 //	    	.subscribe();
 //    }
 
-    @Scheduled(initialDelay=10000, fixedRate=13000)
+    @Scheduled(initialDelay=1000, fixedRate=10000)
     public void momoJob() {
         log.info("crawler momo for fixed time");
         List<String> resultData = momoCrawlerService.doCrawler();
@@ -59,7 +59,7 @@ public class CrawlerJob {
                 try {
                     messager.send(String.format("%s\n%s",momoCrawlerService.getStoreTitle(), item));
                     log.info("has been sent :{}", item);
-                    Thread.sleep(2500l);
+                    Thread.sleep(500l);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -68,33 +68,33 @@ public class CrawlerJob {
         momoFirstLoop =false;
     }
 
-    @Scheduled(initialDelay=5000, fixedRate=30000)
-    public void sinyaJob() {
-        log.info("crawler sinya for fixed time");
-        List<String> resultData = sinyaCrawlerService.doCrawler();
-        if(!resultData.isEmpty() && !sinyaFirstLoop ){
-            StringBuffer sb = new StringBuffer(sinyaCrawlerService.getStoreTitle());
-            sb.append("\n");
-            resultData.forEach(item->{
-                sb.append(item).append("\n");
-            });
-            messager.send(sb.toString());
-        }
-        sinyaFirstLoop = false;
-    }
-
-    @Scheduled(initialDelay=1000, fixedRate=30000)
-    public void coolpcJob() {
-    	log.info("crawler coolpc for fixed time");
-        List<String> resultData = coolpcCrawlerService.doCrawler();
-        if(!resultData.isEmpty() && !coolpcFirstLoop ){
-            StringBuffer sb = new StringBuffer(coolpcCrawlerService.getStoreTitle());
-            sb.append("\n");
-            resultData.forEach(item->{
-                sb.append(item).append("\n\n");
-            });
-            messager.send(sb.toString());
-        }
-        coolpcFirstLoop = false;
-    }
+//    @Scheduled(initialDelay=6000, fixedRate=10000)
+//    public void sinyaJob() {
+//        log.info("crawler sinya for fixed time");
+//        List<String> resultData = sinyaCrawlerService.doCrawler();
+//        if(!resultData.isEmpty() && !sinyaFirstLoop ){
+//            StringBuffer sb = new StringBuffer(sinyaCrawlerService.getStoreTitle());
+//            sb.append("\n");
+//            resultData.forEach(item->{
+//                sb.append(item).append("\n");
+//            });
+//            messager.send(sb.toString());
+//        }
+//        sinyaFirstLoop = false;
+//    }
+//
+//    @Scheduled(initialDelay=1000, fixedRate=10000)
+//    public void coolpcJob() {
+//    	log.info("crawler coolpc for fixed time");
+//        List<String> resultData = coolpcCrawlerService.doCrawler();
+//        if(!resultData.isEmpty() && !coolpcFirstLoop ){
+//            StringBuffer sb = new StringBuffer(coolpcCrawlerService.getStoreTitle());
+//            sb.append("\n");
+//            resultData.forEach(item->{
+//                sb.append(item).append("\n\n");
+//            });
+//            messager.send(sb.toString());
+//        }
+//        coolpcFirstLoop = false;
+//    }
 }

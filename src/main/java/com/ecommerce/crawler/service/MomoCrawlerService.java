@@ -1,17 +1,13 @@
 package com.ecommerce.crawler.service;
 
-import com.ecommerce.crawler.model.resp.SinyaResp;
-import com.ecommerce.crawler.model.vo.SinyaProdVO;
-import com.ecommerce.crawler.model.vo.SinyaVO;
-import lombok.Getter;
-import lombok.SneakyThrows;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.http.*;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
@@ -21,17 +17,10 @@ import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.Resource;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 //https://m.momoshop.com.tw/cateGoods.momo?cn=4302000169&page=1&sortType=5&imgSH=fourCardStyle
 //https://m.momoshop.com.tw/cateGoods.momo?cn=4302000216&page=1&sortType=4&imgSH=fourCardType
@@ -48,8 +37,10 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
     final String mobile_momo_search_url = "https://m.momoshop.com.tw/search.momo";
     @Resource
     RestTemplate restTemplate;
+    @Resource
+    ThreadPoolTaskExecutor threadPool;
 
-    BiFunction<MultiValueMap<String, String>, ConcurrentMap<String, String>, Void> crawlerSearch = (uriVars, momoRecorderMap) ->{
+    BiFunction<MultiValueMap<String, String>, ConcurrentMap<String, String>, Void> crawlerSearch = (uriVars, recorderMap) ->{
         UriComponents uriComponents = UriComponentsBuilder.fromUriString(mobile_momo_search_url).queryParams(uriVars).build();
         log.info("uri :{}", uriComponents.toUriString());
         final String url = uriComponents.toUriString();
@@ -70,8 +61,8 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
                 String prodUrl  = element.childNode(9).attr("href");
                 String fullInfo = prodPrice +"_"+ prodName;
                 String fullUrl  = mobile_momo_url + prodUrl;
-                log.info("{} {}", fullInfo, fullUrl);
-                momoRecorderMap.put(fullInfo, fullUrl);
+                log.debug("{} {}", fullInfo, fullUrl);
+                recorderMap.put(fullInfo, fullUrl);
             }
         }
         return null;
@@ -90,7 +81,6 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
         log.debug("resp body:{}", resp.getBody());
         Document doc  = Jsoup.parse(resp.getBody());
         Elements elements = doc.select("a.productInfo");
-
         for(Element element: elements){
             if(!element.childNode(7).outerHtml().contains(soldout_keyword)){
                 String prodName = element.attr("title");
@@ -98,7 +88,7 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
                 String prodUrl  = element.attr("href");
                 String fullInfo = prodPrice +"_"+ prodName;
                 String fullUrl  = mobile_momo_url + prodUrl;
-                log.info("{} {}", fullInfo, fullUrl);
+                log.debug("{} {}", fullInfo, fullUrl);
                 momoRecorderMap.put(fullInfo, fullUrl);
             }
         }
@@ -108,47 +98,80 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
     @Override
     @SneakyThrows
     public void crawler() {
-        ConcurrentMap<String, String> momoRecorderMap =  new ConcurrentHashMap<>();
-        for(int page = 1 ; page < 4; page++){
-            MultiValueMap<String, String>uriVars = new LinkedMultiValueMap<>();
-            uriVars.add("cn","4302000169");
-            uriVars.add("page", String.valueOf(page));
-            uriVars.add("sortType", "5");
-            uriVars.add("imgSH", "fourCardStyle");
-            crawlerCateGoods.apply(uriVars, momoRecorderMap);
-            Thread.sleep(100l);
-            MultiValueMap<String, String>uriVars2 = new LinkedMultiValueMap<>();
-            uriVars2.add("cn","4302000216");
-            uriVars2.add("page", String.valueOf(page));
-            uriVars2.add("sortType", "4");
-            uriVars2.add("imgSH", "fourCardStyle");
-            crawlerCateGoods.apply(uriVars2, momoRecorderMap);
-            Thread.sleep(100l);
+        final long fixedRateMill = 300l;
+        final ConcurrentMap<String, String> momoRecorderMap =  new ConcurrentHashMap<>();
+        for(int page = 1 ; page < 5; page++){
+            final int fixPage = page;
+            CompletableFuture<ConcurrentMap<String, String>> cf4302000169 = CompletableFuture.supplyAsync(()->{
+                                    MultiValueMap<String, String>uriVars = new LinkedMultiValueMap<>();
+                                    uriVars.add("cn","4302000169");
+                                    uriVars.add("page", String.valueOf(fixPage));
+                                    uriVars.add("sortType", "5");
+                                    uriVars.add("imgSH", "fourCardStyle");
+                                    ConcurrentMap<String, String> recordMap = new ConcurrentHashMap<>();
+                                    crawlerCateGoods.apply(uriVars, recordMap);
+                                    return recordMap;
+            });
 
-            //search 3060
-            MultiValueMap<String, String> rtx3060map =  getSearchMap(String.valueOf(page), "3060");
-            crawlerSearch.apply(rtx3060map, momoRecorderMap);
-            Thread.sleep(100l);
+            CompletableFuture<ConcurrentMap<String, String>> cf4302000216 = CompletableFuture.supplyAsync(()->{
+                MultiValueMap<String, String>uriVars2 = new LinkedMultiValueMap<>();
+                            uriVars2.add("cn","4302000216");
+                            uriVars2.add("page", String.valueOf(fixPage));
+                            uriVars2.add("sortType", "4");
+                            uriVars2.add("imgSH", "fourCardStyle");
+                            ConcurrentMap<String, String> recordMap = new ConcurrentHashMap<>();
+                            crawlerCateGoods.apply(uriVars2, recordMap);
+                            return recordMap;
+            });
 
-            //search 3070
-            MultiValueMap<String, String> rtx3070map =  getSearchMap(String.valueOf(page), "3070");
-            crawlerSearch.apply(rtx3070map, momoRecorderMap);
-            Thread.sleep(100l);
-
-            //search 3080
-            MultiValueMap<String, String> rtx3080map =  getSearchMap(String.valueOf(page), "3080");
-            crawlerSearch.apply(rtx3080map, momoRecorderMap);
-            Thread.sleep(100l);
-
-            //search 3090
-            MultiValueMap<String, String> rtx3090map =  getSearchMap(String.valueOf(page), "3090");
-            crawlerSearch.apply(rtx3080map, momoRecorderMap);
-            Thread.sleep(100l);
+            momoRecorderMap.putAll(cf4302000169.get());
+            momoRecorderMap.putAll(cf4302000216.get());
+            Thread.sleep(fixedRateMill);
         }
+
+        for(int page = 1 ; page < 4; page++){
+            final int fixPage = page;
+      //search 3060
+      CompletableFuture<ConcurrentMap<String, String>> cf3060 = CompletableFuture.supplyAsync(()->{
+                MultiValueMap<String, String> rtx3060map =  getSearchMap(String.valueOf(fixPage), "3060");
+                ConcurrentMap<String, String> recordMap = new ConcurrentHashMap<>();
+                crawlerSearch.apply(rtx3060map,  recordMap);
+                return recordMap;
+            });
+
+      //  search 3070
+        CompletableFuture<ConcurrentMap<String, String>> cf3070 = CompletableFuture.supplyAsync(()->{
+            MultiValueMap<String, String> rtx3070map =  getSearchMap(String.valueOf(fixPage), "3070");
+            ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
+            crawlerSearch.apply(rtx3070map, tempMap);
+            return tempMap;
+        });
+//            Thread.sleep(fixedRateMill);
+        //search 3080
+        CompletableFuture<ConcurrentMap<String, String>> cf3080 = CompletableFuture.supplyAsync(()->{
+            MultiValueMap<String, String> rtx3080map =  getSearchMap(String.valueOf(fixPage), "3080");
+            ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
+            crawlerSearch.apply(rtx3080map, tempMap);
+            return tempMap;
+        });
+        //  search 3090
+        CompletableFuture<ConcurrentMap<String, String>> cf3090 = CompletableFuture.supplyAsync(()->{
+            MultiValueMap<String, String> rtx3090map =  getSearchMap(String.valueOf(fixPage), "3090");
+            ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
+            crawlerSearch.apply(rtx3090map, tempMap);
+            return tempMap;
+        });
+            momoRecorderMap.putAll(cf3060.get());
+            momoRecorderMap.putAll(cf3070.get());
+            momoRecorderMap.putAll(cf3080.get());
+            momoRecorderMap.putAll(cf3090.get());
+        }
+
         log.info("momoRecorderMap size: {}", momoRecorderMap.size());
         crawlerServiceDTO.setMomoCrawlerRecorderMap(momoRecorderMap);
-        log.info("momoRecorderMap: {}", momoRecorderMap);
+        log.debug("momoRecorderMap: {}", momoRecorderMap);
     }
+
 
     private MultiValueMap<String, String> getSearchMap(String page, String keyword){
         MultiValueMap<String, String> varsMap = new LinkedMultiValueMap<>();
@@ -197,3 +220,5 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
 
 
 }
+
+

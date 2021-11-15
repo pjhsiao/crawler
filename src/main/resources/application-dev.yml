@@ -15,8 +15,8 @@ telegram:
 restTemplate:
   connPoolSize: 80
   maxPerRoute: 100
-  connTimeout: 8000
-  readTimeout: 15000
+  connTimeout: 10000
+  readTimeout: 3000
   connReqTimeout: 10000
 
 #logging
