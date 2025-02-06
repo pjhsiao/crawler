@@ -22,75 +22,57 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
 
-//https://m.momoshop.com.tw/cateGoods.momo?cn=4302000169&page=1&sortType=5&imgSH=fourCardStyle
-//https://m.momoshop.com.tw/cateGoods.momo?cn=4302000216&page=1&sortType=4&imgSH=fourCardType
-//https://m.momoshop.com.tw/search.momo?searchKeyword=3070&couponSeq=&searchType=2&cateLevel=NaN&curPage=1&cateCode=1200200000&cateName=%E9%9B%BB%E8%85%A6%E7%B5%84%E4%BB%B6%2822%29&maxPage=2&minPage=1&_advCp=N&_advFirst=N&_advFreeze=N&_advSuperstore=N&_advTvShop=N&_advTomorrow=N&_advNAM=N&_advStock=N&_advPrefere=N&_advThreeHours=N&_brandNoList=&ent=b&_imgSH=fourCardType&specialGoodsType=&_isFuzzy=0
-
 @Service
 @Slf4j
 public class MomoCrawlerService extends AbstractCrawlerService implements ICrawlerService{
     @Getter
     private final String storeTitle = "【摸摸】";
-    final String soldout_keyword = "forso";
     final String mobile_momo_url = "https://m.momoshop.com.tw/";
     final String mobile_momo_goods_url = "https://m.momoshop.com.tw/cateGoods.momo";
     final String mobile_momo_search_url = "https://m.momoshop.com.tw/search.momo";
+
+    final String momo_goodsDetail_url = "https://www.momoshop.com.tw/goods/GoodsDetail.jsp?i_code=";
+
+    final String momo_TP_goodsDetail_url ="https://www.momoshop.com.tw/TP/%s/goodsDetail/%s";
     @Resource
     RestTemplate restTemplate;
     @Resource
     ThreadPoolTaskExecutor threadPool;
 
     BiFunction<MultiValueMap<String, String>, ConcurrentMap<String, String>, Void> crawlerSearch = (uriVars, recorderMap) ->{
-        UriComponents uriComponents = UriComponentsBuilder.fromUriString(mobile_momo_search_url).queryParams(uriVars).build();
-        log.info("uri :{}", uriComponents.toUriString());
-        final String url = uriComponents.toUriString();
+        try {
+            UriComponents uriComponents = UriComponentsBuilder.fromUriString(mobile_momo_search_url).queryParams(uriVars).build();
+            log.debug("uri :{}", uriComponents.toUriString());
+            String url = uriComponents.toUriString();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setCacheControl(CacheControl.noCache());
-        HttpEntity httpEntity = new HttpEntity<>(headers);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setCacheControl(CacheControl.noCache());
+            HttpEntity httpEntity = new HttpEntity<>(headers);
 
-        ResponseEntity<String> resp = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
-        log.debug("resp body:{}", resp.getBody());
-        Document doc  = Jsoup.parse(resp.getBody());
-        Elements elements = doc.select("li.goodsItemLi");
-
-        for(Element element: elements){
-            if(!element.childNode(1).attr("value").equals("0")){
-                String prodName = element.childNode(9).attr("title");
-                String prodPrice = element.select("b.price").text();
-                String prodUrl  = element.childNode(9).attr("href");
-                String fullInfo = prodPrice +"_"+ prodName;
-                String fullUrl  = mobile_momo_url + prodUrl;
-                log.debug("{} {}", fullInfo, fullUrl);
-                recorderMap.put(fullInfo, fullUrl);
+            ResponseEntity<String> resp = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
+            log.debug("resp body:{}", resp.getBody());
+            Document doc  = Jsoup.parse(resp.getBody());
+            Elements elements = doc.select("li.goodsItemLi");
+            log.info("uri :{} element size:{}", uriComponents.toUriString(), elements.size());
+            for(Element element: elements){
+                if(!element.childNode(1).attr("value").equals("0")){
+                    String prodName = element.childNode(11).attr("title");
+                    String prodPrice = element.select("span.ec-current-price.price").text();
+                    String goodscode  = element.childNode(11).attr("goodscode");
+                    String fullUrl;
+                    if(goodscode.contains("TP")){
+                        String entpcode = element.childNode(11).attr("entpcode");
+                        fullUrl  = String.format(momo_TP_goodsDetail_url, entpcode, goodscode); //https://www.momoshop.com.tw/goods/GoodsDetail.jsp?i_code=13663996
+                    }else {
+                        fullUrl  = momo_goodsDetail_url + goodscode; //https://www.momoshop.com.tw/goods/GoodsDetail.jsp?i_code=13663996
+                    }
+                    String fullInfo = prodPrice +"_"+ prodName;
+                    log.debug("{} {}", fullInfo, fullUrl);
+                    recorderMap.put(fullInfo, fullUrl);
+                }
             }
-        }
-        return null;
-    };
-
-    BiFunction<MultiValueMap<String, String>, ConcurrentMap<String, String>, Void> crawlerCateGoods = (uriVars, momoRecorderMap) ->{
-        UriComponents uriComponents = UriComponentsBuilder.fromUriString(mobile_momo_goods_url).queryParams(uriVars).build();
-        log.info("uri :{}", uriComponents.toUriString());
-        final String url = uriComponents.toUriString();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setCacheControl(CacheControl.noCache());
-        HttpEntity httpEntity = new HttpEntity<>(headers);
-
-        ResponseEntity<String> resp = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
-        log.debug("resp body:{}", resp.getBody());
-        Document doc  = Jsoup.parse(resp.getBody());
-        Elements elements = doc.select("a.productInfo");
-        for(Element element: elements){
-            if(!element.childNode(7).outerHtml().contains(soldout_keyword)){
-                String prodName = element.attr("title");
-                String prodPrice = element.select("b.price").text().replaceAll(",","");
-                String prodUrl  = element.attr("href");
-                String fullInfo = prodPrice +"_"+ prodName;
-                String fullUrl  = mobile_momo_url + prodUrl;
-                log.debug("{} {}", fullInfo, fullUrl);
-                momoRecorderMap.put(fullInfo, fullUrl);
-            }
+        }catch (Exception e){
+            log.error("error: {}", e.getMessage());
         }
         return null;
     };
@@ -98,73 +80,36 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
     @Override
     @SneakyThrows
     public void crawler() {
-        final long fixedRateMill = 300l;
+        final long fixedRateMill = 6000l;
         final ConcurrentMap<String, String> momoRecorderMap =  new ConcurrentHashMap<>();
-        for(int page = 1 ; page < 5; page++){
+
+        for(int page = 1 ; page < 3; page++){
             final int fixPage = page;
-            CompletableFuture<ConcurrentMap<String, String>> cf4302000169 = CompletableFuture.supplyAsync(()->{
-                                    MultiValueMap<String, String>uriVars = new LinkedMultiValueMap<>();
-                                    uriVars.add("cn","4302000169");
-                                    uriVars.add("page", String.valueOf(fixPage));
-                                    uriVars.add("sortType", "5");
-                                    uriVars.add("imgSH", "fourCardStyle");
-                                    ConcurrentMap<String, String> recordMap = new ConcurrentHashMap<>();
-                                    crawlerCateGoods.apply(uriVars, recordMap);
-                                    return recordMap;
-            });
 
-            CompletableFuture<ConcurrentMap<String, String>> cf4302000216 = CompletableFuture.supplyAsync(()->{
-                MultiValueMap<String, String>uriVars2 = new LinkedMultiValueMap<>();
-                            uriVars2.add("cn","4302000216");
-                            uriVars2.add("page", String.valueOf(fixPage));
-                            uriVars2.add("sortType", "4");
-                            uriVars2.add("imgSH", "fourCardStyle");
-                            ConcurrentMap<String, String> recordMap = new ConcurrentHashMap<>();
-                            crawlerCateGoods.apply(uriVars2, recordMap);
-                            return recordMap;
-            });
-
-            momoRecorderMap.putAll(cf4302000169.get());
-            momoRecorderMap.putAll(cf4302000216.get());
+        //search 80
+        CompletableFuture<ConcurrentMap<String, String>> cf80 = CompletableFuture.supplyAsync(()->{
+                                                                    MultiValueMap<String, String> rtx80map =  getSearchMap(String.valueOf(fixPage), "5080");
+                                                                    ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
+                                                                    crawlerSearch.apply(rtx80map, tempMap);
+                                                                    return tempMap;
+                                                                }).exceptionally(ex->{
+                                                                    log.error( "在 cf80 任務中發生異常: {}", ex.getMessage());
+                                                                    return new ConcurrentHashMap<>();
+                                                                });
+        //  search 90
+        CompletableFuture<ConcurrentMap<String, String>> cf90 = CompletableFuture.supplyAsync(()->{
+                                                                    MultiValueMap<String, String> rtx90map =  getSearchMap(String.valueOf(fixPage), "5090");
+                                                                    ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
+                                                                    crawlerSearch.apply(rtx90map, tempMap);
+                                                                    return tempMap;
+                                                                }).exceptionally(ex->{
+                                                                    log.error( "在 cf90 任務中發生異常: {}", ex.getMessage());
+                                                                    return new ConcurrentHashMap<>();
+                                                                });
+            momoRecorderMap.putAll(cf80.get());
             Thread.sleep(fixedRateMill);
-        }
-
-        for(int page = 1 ; page < 4; page++){
-            final int fixPage = page;
-      //search 3060
-      CompletableFuture<ConcurrentMap<String, String>> cf3060 = CompletableFuture.supplyAsync(()->{
-                MultiValueMap<String, String> rtx3060map =  getSearchMap(String.valueOf(fixPage), "3060");
-                ConcurrentMap<String, String> recordMap = new ConcurrentHashMap<>();
-                crawlerSearch.apply(rtx3060map,  recordMap);
-                return recordMap;
-            });
-
-      //  search 3070
-        CompletableFuture<ConcurrentMap<String, String>> cf3070 = CompletableFuture.supplyAsync(()->{
-            MultiValueMap<String, String> rtx3070map =  getSearchMap(String.valueOf(fixPage), "3070");
-            ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
-            crawlerSearch.apply(rtx3070map, tempMap);
-            return tempMap;
-        });
-//            Thread.sleep(fixedRateMill);
-        //search 3080
-        CompletableFuture<ConcurrentMap<String, String>> cf3080 = CompletableFuture.supplyAsync(()->{
-            MultiValueMap<String, String> rtx3080map =  getSearchMap(String.valueOf(fixPage), "3080");
-            ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
-            crawlerSearch.apply(rtx3080map, tempMap);
-            return tempMap;
-        });
-        //  search 3090
-        CompletableFuture<ConcurrentMap<String, String>> cf3090 = CompletableFuture.supplyAsync(()->{
-            MultiValueMap<String, String> rtx3090map =  getSearchMap(String.valueOf(fixPage), "3090");
-            ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
-            crawlerSearch.apply(rtx3090map, tempMap);
-            return tempMap;
-        });
-            momoRecorderMap.putAll(cf3060.get());
-            momoRecorderMap.putAll(cf3070.get());
-            momoRecorderMap.putAll(cf3080.get());
-            momoRecorderMap.putAll(cf3090.get());
+            momoRecorderMap.putAll(cf90.get());
+            Thread.sleep(fixedRateMill);
         }
 
         log.info("momoRecorderMap size: {}", momoRecorderMap.size());
@@ -176,26 +121,10 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
     private MultiValueMap<String, String> getSearchMap(String page, String keyword){
         MultiValueMap<String, String> varsMap = new LinkedMultiValueMap<>();
         varsMap.add("searchKeyword", keyword);
-        varsMap.add("searchType", "2");
-        varsMap.add("cateLevel", "NaN");
         varsMap.add("curPage", page);
         varsMap.add("cateCode", "1200200000");
-        varsMap.add("cateName", "電腦組件");
-        varsMap.add("maxPage", "2");
+        varsMap.add("maxPage", "3");
         varsMap.add("minPage", "1");
-        varsMap.add("_advCp", "N");
-        varsMap.add("_advFirst", "N");
-        varsMap.add("_advFreeze", "N");
-        varsMap.add("_advSuperstore", "N");
-        varsMap.add("_advTvShop", "N");
-        varsMap.add("_advTomorrow", "N");
-        varsMap.add("_advNAM", "N");
-        varsMap.add("_advStock", "N");
-        varsMap.add("_advPrefere", "N");
-        varsMap.add("_advThreeHours", "N");
-        varsMap.add("ent", "b");
-        varsMap.add("_imgSH", "fourCardType");
-        varsMap.add("_isFuzzy", "0");
         return varsMap;
     }
     @Override
@@ -210,6 +139,7 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
             recorderMap.forEach((key,value)->{
                 if( null == goodsMap.putIfAbsent(key, true)){
                     effectiveData.add(String.format("%s %s /n", key, value));
+                    log.info("{} {}", key, value);
                 }
             });
         }

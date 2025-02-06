@@ -9,8 +9,8 @@ server:
 
 telegram:
   apiUrl: "https://api.telegram.org/"
-  apiToken: "1362757933:AAH2OIzuj6Rk4Cj7Ar4_Sq7qBx1kUJLxgGQ"
-  chatId: "-411879183"
+  apiToken: "7724551229:AAG_vI-z21mkJUPC9UCuvsFL5at_NsDdRAE"
+  chatId: "-1002356467500"
 
 restTemplate:
   connPoolSize: 80

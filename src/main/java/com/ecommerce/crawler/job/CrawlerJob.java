@@ -49,7 +49,7 @@ public class CrawlerJob {
 //	    	.subscribe();
 //    }
 
-    @Scheduled(initialDelay=1000, fixedRate=10000)
+    @Scheduled(initialDelay=1000, fixedRate=50000)
     public void momoJob() {
         log.info("crawler momo for fixed time");
         List<String> resultData = momoCrawlerService.doCrawler();
@@ -59,7 +59,7 @@ public class CrawlerJob {
                 try {
                     messager.send(String.format("%s\n%s",momoCrawlerService.getStoreTitle(), item));
                     log.info("has been sent :{}", item);
-                    Thread.sleep(500l);
+                    Thread.sleep(3000l);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
