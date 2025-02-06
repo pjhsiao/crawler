@@ -3,16 +3,14 @@ package com.ecommerce.crawler.job;
 import com.ecommerce.crawler.messager.TelegramMessager;
 import com.ecommerce.crawler.service.CoolpcCrawlerService;
 import com.ecommerce.crawler.service.MomoCrawlerService;
+import com.ecommerce.crawler.service.PCHomeCrawlerService;
 import com.ecommerce.crawler.service.SinyaCrawlerService;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.math.BigInteger;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @Class: CrawlerJob.java
@@ -32,6 +30,9 @@ public class CrawlerJob {
     MomoCrawlerService momoCrawlerService;
 
     @Resource
+    PCHomeCrawlerService pcHomeCrawlerService;
+
+    @Resource
     TelegramMessager messager;
 
     private boolean momoFirstLoop = true;
@@ -39,6 +40,8 @@ public class CrawlerJob {
     private boolean sinyaFirstLoop = true;
 
     private boolean coolpcFirstLoop = true;
+
+    private boolean pchomeFirstLoop = true;
 
 //    @Scheduled(cron = "0 05 15 * * MON-FRI")
 //    public void rebuild_stock() {
@@ -49,7 +52,7 @@ public class CrawlerJob {
 //	    	.subscribe();
 //    }
 
-    @Scheduled(initialDelay=1000, fixedRate=50000)
+//    @Scheduled(initialDelay=1000, fixedRate=50000)
     public void momoJob() {
         log.info("crawler momo for fixed time");
         List<String> resultData = momoCrawlerService.doCrawler();
@@ -66,6 +69,25 @@ public class CrawlerJob {
             });
         }
         momoFirstLoop =false;
+    }
+
+    @Scheduled(initialDelay=1000, fixedRate=10000)
+    public void pchomeJob() {
+        log.info("crawler pchome for fixed time");
+        List<String> resultData = pcHomeCrawlerService.doCrawler();
+        //do not send message at first time
+        if(!resultData.isEmpty() && !pchomeFirstLoop){
+            resultData.forEach(item->{
+                try {
+                    messager.send(String.format("%s\n%s",pcHomeCrawlerService.getStoreTitle(), item));
+                    log.info("has been sent :{}", item);
+                    Thread.sleep(3000l);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+        pchomeFirstLoop =false;
     }
 
 //    @Scheduled(initialDelay=6000, fixedRate=10000)

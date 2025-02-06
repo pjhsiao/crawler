@@ -1,13 +1,11 @@
 package com.ecommerce.crawler.service;
 
-import com.ecommerce.crawler.model.Goods;
 import com.ecommerce.crawler.model.dto.CrawlerServiceDTO;
 import lombok.Getter;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @Getter
 public abstract class AbstractCrawlerService {

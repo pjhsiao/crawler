@@ -8,7 +8,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.http.*;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
@@ -28,24 +27,20 @@ import java.util.function.BiFunction;
 
 @Service
 @Slf4j
-public class MomoCrawlerService extends AbstractCrawlerService implements ICrawlerService{
+public class PCHomeCrawlerService extends AbstractCrawlerService implements ICrawlerService{
     @Getter
-    private final String storeTitle = "【摸摸】";
-    final String mobile_momo_url = "https://m.momoshop.com.tw/";
-    final String mobile_momo_goods_url = "https://m.momoshop.com.tw/cateGoods.momo";
-    final String mobile_momo_search_url = "https://m.momoshop.com.tw/search.momo";
+    private final String storeTitle = "【電腦家】";
 
-    final String momo_goodsDetail_url = "https://www.momoshop.com.tw/goods/GoodsDetail.jsp?i_code=";
+    final String pchome_url = "https://24h.pchome.com.tw";
 
-    final String momo_TP_goodsDetail_url ="https://www.momoshop.com.tw/TP/%s/goodsDetail/%s";
+    final String pchome_search_url = "https://24h.pchome.com.tw/search/";
+
     @Resource
     RestTemplate restTemplate;
-    @Resource
-    ThreadPoolTaskExecutor threadPool;
 
     BiFunction<MultiValueMap<String, String>, ConcurrentMap<String, String>, Void> crawlerSearch = (uriVars, recorderMap) ->{
         try {
-            UriComponents uriComponents = UriComponentsBuilder.fromUriString(mobile_momo_search_url).queryParams(uriVars).build();
+            UriComponents uriComponents = UriComponentsBuilder.fromUriString(pchome_search_url).queryParams(uriVars).build();
             log.debug("uri :{}", uriComponents.toUriString());
             String url = uriComponents.toUriString();
 
@@ -56,20 +51,15 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
             ResponseEntity<String> resp = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
             log.debug("resp body:{}", resp.getBody());
             Document doc  = Jsoup.parse(resp.getBody());
-            Elements elements = doc.select("li.goodsItemLi");
+            Elements elements = doc.select("li.c-listInfoGrid__item");
             log.info("uri :{} element size:{}", uriComponents.toUriString(), elements.size());
             for(Element element: elements){
-                if(!element.childNode(1).attr("value").equals("0")){
-                    String prodName = element.childNode(11).attr("title");
-                    String prodPrice = element.select("span.ec-current-price.price").text();
-                    String goodscode  = element.childNode(11).attr("goodscode");
-                    String fullUrl;
-                    if(goodscode.contains("TP")){
-                        String entpcode = element.childNode(11).attr("entpcode");
-                        fullUrl  = String.format(momo_TP_goodsDetail_url, entpcode, goodscode); //https://www.momoshop.com.tw/goods/GoodsDetail.jsp?i_code=13663996
-                    }else {
-                        fullUrl  = momo_goodsDetail_url + goodscode; //https://www.momoshop.com.tw/goods/GoodsDetail.jsp?i_code=13663996
-                    }
+                List<Element> soldOutElements = element.select("span.c-label__notice");
+                if(soldOutElements.isEmpty()){ //on prod must be empty
+                    String prodName = element.select("div.c-prodInfoV2__title").text();
+                    String prodPrice = element.select("div.c-prodInfoV2__price").text();
+                    String goodHref  = element.select("a.c-prodInfoV2__link").attr("href");
+                    String fullUrl = pchome_url + goodHref; //https://24h.pchome.com.tw/prod/DRADTJ-1900IAR3R
                     String fullInfo = prodPrice +"_"+ prodName;
                     log.debug("{} {}", fullInfo, fullUrl);
                     recorderMap.put(fullInfo, fullUrl);
@@ -84,15 +74,12 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
     @Override
     @SneakyThrows
     public void crawler() {
+        log.info("do {} crawler", storeTitle);
         final long fixedRateMill = 6000l;
-        final ConcurrentMap<String, String> momoRecorderMap =  new ConcurrentHashMap<>();
+        final ConcurrentMap<String, String> pchomeRecorderMap =  new ConcurrentHashMap<>();
 
-        for(int page = 1 ; page < 3; page++){
-            final int fixPage = page;
-
-        //search 80
         CompletableFuture<ConcurrentMap<String, String>> cf80 = CompletableFuture.supplyAsync(()->{
-                                                                    MultiValueMap<String, String> rtx80map =  getSearchMap(String.valueOf(fixPage), "5080");
+                                                                    MultiValueMap<String, String> rtx80map =  getSearchMap("5080");
                                                                     ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
                                                                     crawlerSearch.apply(rtx80map, tempMap);
                                                                     return tempMap;
@@ -100,9 +87,9 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
                                                                     log.error( "在 cf80 任務中發生異常: {}", ex.getMessage());
                                                                     return new ConcurrentHashMap<>();
                                                                 });
-        //  search 90
+
         CompletableFuture<ConcurrentMap<String, String>> cf90 = CompletableFuture.supplyAsync(()->{
-                                                                    MultiValueMap<String, String> rtx90map =  getSearchMap(String.valueOf(fixPage), "5090");
+                                                                    MultiValueMap<String, String> rtx90map =  getSearchMap("5090");
                                                                     ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
                                                                     crawlerSearch.apply(rtx90map, tempMap);
                                                                     return tempMap;
@@ -110,30 +97,27 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
                                                                     log.error( "在 cf90 任務中發生異常: {}", ex.getMessage());
                                                                     return new ConcurrentHashMap<>();
                                                                 });
-            momoRecorderMap.putAll(cf80.get());
-            Thread.sleep(fixedRateMill);
-            momoRecorderMap.putAll(cf90.get());
-            Thread.sleep(fixedRateMill);
-        }
 
-        log.info("momoRecorderMap size: {}", momoRecorderMap.size());
-        crawlerServiceDTO.setMomoCrawlerRecorderMap(momoRecorderMap);
-        log.debug("momoRecorderMap: {}", momoRecorderMap);
+        pchomeRecorderMap.putAll(cf80.get());
+        Thread.sleep(fixedRateMill);
+        pchomeRecorderMap.putAll(cf90.get());
+        Thread.sleep(fixedRateMill);
+        log.info("pchomeRecorderMap size: {}", pchomeRecorderMap.size());
+        crawlerServiceDTO.setPchomeCrawlerRecorderMap(pchomeRecorderMap);
+        log.info("end {} crawler", storeTitle);
     }
 
-
-    private MultiValueMap<String, String> getSearchMap(String page, String keyword){
+    private MultiValueMap<String, String> getSearchMap(String keyword){
         MultiValueMap<String, String> varsMap = new LinkedMultiValueMap<>();
-        varsMap.add("searchKeyword", keyword);
-        varsMap.add("curPage", page);
-        varsMap.add("cateCode", "1200200000");
-        varsMap.add("maxPage", "3");
-        varsMap.add("minPage", "1");
+        varsMap.add("q", keyword);
+        varsMap.add("pCate", "103004000000000");
         return varsMap;
     }
+
     @Override
     public void parse() {
-        Map<String, String>  recorderMap = crawlerServiceDTO.getMomoCrawlerRecorderMap();
+        log.info("do {} parse", storeTitle);
+        Map<String, String> recorderMap = crawlerServiceDTO.getPchomeCrawlerRecorderMap();
         List<String> effectiveData = new CopyOnWriteArrayList<>();
         if(CollectionUtils.isEmpty(recorderMap)){
             log.error("crawlerRecorderMap is empty");
@@ -150,7 +134,6 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
         crawlerServiceDTO.setEffectiveData(effectiveData);
         log.info("effectiveData size: {}", effectiveData.size());
         log.info("goodsMap size: {}", goodsMap.size());
+        log.info("end {} parse", storeTitle);
     }
 }
-
-

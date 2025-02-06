@@ -4,3 +4,24 @@ spring:
   profiles:
     active: dev
 
+telegram:
+  apiUrl: "https://api.telegram.org/"
+  apiToken: "7892170107:AAHlR1hW9nxEr1Ztz-igoWFIQE3jhb5G2Rs" #@tw_ecomm_bull_bot
+  chatId: "-4696262660" #Ecomm
+
+#  apiToken: "7724551229:AAG_vI-z21mkJUPC9UCuvsFL5at_NsDdRAE"  #@tw_ecomm_bull_bot
+#  chatId: "-1002356467500"  #@iRobot
+
+restTemplate:
+  connPoolSize: 80
+  maxPerRoute: 100
+  connTimeout: 10000
+  readTimeout: 3000
+  connReqTimeout: 10000
+
+#logging
+logging:
+  level:
+    root: INFO
+    com.ecommerce.crawler: INFO
+    org.springframework.boot: INFO

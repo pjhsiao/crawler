@@ -1,27 +1,8 @@
 server:
-  port: 8888
+  port: 8899
   undertow:
     # 以下的配置会影响buffer,这些buffer会用于服务器连接的IO操作,有点类似netty的池化内存管理
     # 每块buffer的空间大小,越小的空间被利用越充分，不要设置太大，以免影响其他应用，合适即可
     buffer-size: 1024
     # 是否分配的直接内存(NIO直接分配的堆外内存)
     direct-buffers: true
-
-telegram:
-  apiUrl: "https://api.telegram.org/"
-  apiToken: "7724551229:AAG_vI-z21mkJUPC9UCuvsFL5at_NsDdRAE"
-  chatId: "-1002356467500"
-
-restTemplate:
-  connPoolSize: 80
-  maxPerRoute: 100
-  connTimeout: 10000
-  readTimeout: 3000
-  connReqTimeout: 10000
-
-#logging
-logging:
-  level:
-    root: INFO
-    com.ecommerce.crawler: INFO
-    org.springframework.boot: INFO

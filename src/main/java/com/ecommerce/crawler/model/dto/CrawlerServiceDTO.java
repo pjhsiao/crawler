@@ -14,6 +14,8 @@ public class CrawlerServiceDTO {
     private Map<BigInteger, String> crawlerRecorderMap;
     //for momo
     private Map<String, String> momoCrawlerRecorderMap;
+    //for pchome
+    private Map<String, String> pchomeCrawlerRecorderMap;
     //effectiveData will be sand finally
     private List<String> effectiveData;
 }
