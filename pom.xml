@@ -19,15 +19,15 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-<!--                    <fork>true</fork>-->
+                    <fork>true</fork> <!--設定為 true，表示在執行目標時，插件會在新的 JVM 進程中運行，這有助於避免與當前 Maven 進程的衝突-->
                     <mainClass>com.ecommerce.crawler.CrawlerApplication</mainClass>
                 </configuration>
                 <executions>
@@ -58,6 +58,55 @@
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- generate exe file from jar -->
+            <plugin>
+                <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                <artifactId>launch4j-maven-plugin</artifactId>
+                <version>2.3.3</version>
+                <executions>
+                    <execution>
+                        <id>l4j-clui</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>launch4j</goal>
+                        </goals>
+                        <configuration>
+                            <headerType>console</headerType>
+                            <outfile>target/crawler.exe</outfile>
+                            <jar>target/crawler-0.0.1-SNAPSHOT.jar</jar>
+                            <errTitle>Error</errTitle>
+                            <classPath>
+                                <!--指定應用的主類，這是 Spring Boot 的啟動類 JarLauncher，讓 JAR 檔案能夠作為可執行檔啟動。 -->
+                                <mainClass>org.springframework.boot.loader.JarLauncher</mainClass>
+                                <!--指定是否將所有依賴項添加到執行檔案中-->
+                                <addDependencies>true</addDependencies>
+                                <!--指定在類路徑前加載的 JAR 檔案，這裡設置為 anything，可根據需求進行配置。-->
+                                <preCp>anything</preCp>
+                            </classPath>
+                            <jre>
+                                <!--指定插件是否偏好使用 JRE，這裡設置為 preferJre，表示首選使用 JRE-->
+                                <jdkPreference>preferJre</jdkPreference>
+                                <!--指定 JRE 的路徑，這裡使用環境變量 %JAVA_HOME% 和 %PATH%-->
+                                <path>%JAVA_HOME%;%PATH%</path>
+                                <minVersion>1.11.0</minVersion>
+                                <opts>
+                                    <opt>-Dspring.profiles.active=dev</opt> <!-- 指定yml版本 -->
+<!--                                    <opt>-Xdebug</opt>-->
+                                    <!-- 可以添加更多的 <opt> 元素，指定其他的 VM 參數 -->
+                                </opts>
+                            </jre>
+                            <versionInfo>
+                                <fileVersion>1.0.0.0</fileVersion>
+                                <txtFileVersion>${project.version}</txtFileVersion>
+                                <fileDescription>${project.name}</fileDescription>
+                                <productName>${project.name}</productName>
+                                <productVersion>1.0.0.0</productVersion>
+                                <internalName>crawler</internalName>
+                            </versionInfo>
                         </configuration>
                     </execution>
                 </executions>

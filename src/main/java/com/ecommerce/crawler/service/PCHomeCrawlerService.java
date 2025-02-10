@@ -74,8 +74,8 @@ public class PCHomeCrawlerService extends AbstractCrawlerService implements ICra
     @Override
     @SneakyThrows
     public void crawler() {
-        log.info("do {} crawler", storeTitle);
-        final long fixedRateMill = 6000l;
+        log.debug("do {} crawler", storeTitle);
+        final long fixedRateMill = 3000l;
         final ConcurrentMap<String, String> pchomeRecorderMap =  new ConcurrentHashMap<>();
 
         CompletableFuture<ConcurrentMap<String, String>> cf80 = CompletableFuture.supplyAsync(()->{
@@ -97,14 +97,25 @@ public class PCHomeCrawlerService extends AbstractCrawlerService implements ICra
                                                                     log.error( "在 cf90 任務中發生異常: {}", ex.getMessage());
                                                                     return new ConcurrentHashMap<>();
                                                                 });
+        CompletableFuture<ConcurrentMap<String, String>> cfAMDx3d = CompletableFuture.supplyAsync(()->{
+                                                                    MultiValueMap<String, String> rtxADMx3dmap =  getSearchMap("9800x3d");
+                                                                    ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
+                                                                    crawlerSearch.apply(rtxADMx3dmap, tempMap);
+                                                                    return tempMap;
+                                                                }).exceptionally(ex->{
+                                                                    log.error( "在 cfAMDx3d 任務中發生異常: {}", ex.getMessage());
+                                                                    return new ConcurrentHashMap<>();
+                                                                });
 
         pchomeRecorderMap.putAll(cf80.get());
         Thread.sleep(fixedRateMill);
         pchomeRecorderMap.putAll(cf90.get());
         Thread.sleep(fixedRateMill);
+        pchomeRecorderMap.putAll(cfAMDx3d.get());
+        Thread.sleep(fixedRateMill);
         log.info("pchomeRecorderMap size: {}", pchomeRecorderMap.size());
         crawlerServiceDTO.setPchomeCrawlerRecorderMap(pchomeRecorderMap);
-        log.info("end {} crawler", storeTitle);
+        log.debug("end {} crawler", storeTitle);
     }
 
     private MultiValueMap<String, String> getSearchMap(String keyword){
@@ -116,7 +127,7 @@ public class PCHomeCrawlerService extends AbstractCrawlerService implements ICra
 
     @Override
     public void parse() {
-        log.info("do {} parse", storeTitle);
+        log.debug("do {} parse", storeTitle);
         Map<String, String> recorderMap = crawlerServiceDTO.getPchomeCrawlerRecorderMap();
         List<String> effectiveData = new CopyOnWriteArrayList<>();
         if(CollectionUtils.isEmpty(recorderMap)){
@@ -134,6 +145,6 @@ public class PCHomeCrawlerService extends AbstractCrawlerService implements ICra
         crawlerServiceDTO.setEffectiveData(effectiveData);
         log.info("effectiveData size: {}", effectiveData.size());
         log.info("goodsMap size: {}", goodsMap.size());
-        log.info("end {} parse", storeTitle);
+        log.debug("end {} parse", storeTitle);
     }
 }
