@@ -143,7 +143,7 @@ public class PCHomeCrawlerService extends AbstractCrawlerService implements ICra
         Map<String, String> recorderMap = crawlerServiceDTO.getPchomeCrawlerRecorderMap();
         List<String> effectiveData = new CopyOnWriteArrayList<>();
         if(CollectionUtils.isEmpty(recorderMap)){
-            log.error("crawlerRecorderMap is empty");
+            log.info("crawlerRecorderMap is empty");
         }else{
             log.info("crawlerRecorderMap size: {}", recorderMap.size());
             //first parse raw data to goodsMap data

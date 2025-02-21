@@ -6,6 +6,7 @@ import com.ecommerce.crawler.service.MomoCrawlerService;
 import com.ecommerce.crawler.service.PCHomeCrawlerService;
 import com.ecommerce.crawler.service.SinyaCrawlerService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -70,7 +71,7 @@ public class CrawlerJob {
         }
         momoFirstLoop =false;
     }
-
+    @Async
     @Scheduled(initialDelay=1000, fixedRate=10000)
     public void pchomeJob() {
         log.info("crawler pchome for fixed time");
