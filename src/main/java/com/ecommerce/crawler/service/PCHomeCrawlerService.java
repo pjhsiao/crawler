@@ -78,6 +78,16 @@ public class PCHomeCrawlerService extends AbstractCrawlerService implements ICra
         final long fixedRateMill = 3000l;
         final ConcurrentMap<String, String> pchomeRecorderMap =  new ConcurrentHashMap<>();
 
+        CompletableFuture<ConcurrentMap<String, String>> cf70Ti = CompletableFuture.supplyAsync(()->{
+                                                                    MultiValueMap<String, String> rtx70Timap =  getSearchMap( "5070 Ti");
+                                                                    ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
+                                                                    crawlerSearch.apply(rtx70Timap, tempMap);
+                                                                    return tempMap;
+                                                                }).exceptionally(ex->{
+                                                                    log.error( "在 cf70Ti 任務中發生異常: {}", ex.getMessage());
+                                                                    return new ConcurrentHashMap<>();
+                                                                });
+
         CompletableFuture<ConcurrentMap<String, String>> cf80 = CompletableFuture.supplyAsync(()->{
                                                                     MultiValueMap<String, String> rtx80map =  getSearchMap("5080");
                                                                     ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
@@ -107,6 +117,8 @@ public class PCHomeCrawlerService extends AbstractCrawlerService implements ICra
                                                                     return new ConcurrentHashMap<>();
                                                                 });
 
+        pchomeRecorderMap.putAll(cf70Ti.get());
+        Thread.sleep(fixedRateMill);
         pchomeRecorderMap.putAll(cf80.get());
         Thread.sleep(fixedRateMill);
         pchomeRecorderMap.putAll(cf90.get());

@@ -89,8 +89,17 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
 
         for(int page = 1 ; page < 3; page++){
             final int fixPage = page;
-
-        //search 80
+        //5070 Ti
+        CompletableFuture<ConcurrentMap<String, String>> cf70Ti = CompletableFuture.supplyAsync(()->{
+                                                                    MultiValueMap<String, String> rtx70Timap =  getSearchMap(String.valueOf(fixPage), "5070 Ti");
+                                                                    ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
+                                                                    crawlerSearch.apply(rtx70Timap, tempMap);
+                                                                    return tempMap;
+                                                                }).exceptionally(ex->{
+                                                                    log.error( "在 cf70Ti 任務中發生異常: {}", ex.getMessage());
+                                                                    return new ConcurrentHashMap<>();
+                                                                });
+        //search 5080
         CompletableFuture<ConcurrentMap<String, String>> cf80 = CompletableFuture.supplyAsync(()->{
                                                                     MultiValueMap<String, String> rtx80map =  getSearchMap(String.valueOf(fixPage), "5080");
                                                                     ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
@@ -100,7 +109,7 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
                                                                     log.error( "在 cf80 任務中發生異常: {}", ex.getMessage());
                                                                     return new ConcurrentHashMap<>();
                                                                 });
-        //  search 90
+        //  search 5090
         CompletableFuture<ConcurrentMap<String, String>> cf90 = CompletableFuture.supplyAsync(()->{
                                                                     MultiValueMap<String, String> rtx90map =  getSearchMap(String.valueOf(fixPage), "5090");
                                                                     ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
@@ -110,9 +119,20 @@ public class MomoCrawlerService extends AbstractCrawlerService implements ICrawl
                                                                     log.error( "在 cf90 任務中發生異常: {}", ex.getMessage());
                                                                     return new ConcurrentHashMap<>();
                                                                 });
+        //9800x3d
+        CompletableFuture<ConcurrentMap<String, String>> cfAMDx3d = CompletableFuture.supplyAsync(()->{
+                                                                    MultiValueMap<String, String> rtxADMx3dmap =  getSearchMap(String.valueOf(fixPage),"9800x3d");
+                                                                    ConcurrentMap<String, String> tempMap = new ConcurrentHashMap<>();
+                                                                    crawlerSearch.apply(rtxADMx3dmap, tempMap);
+                                                                    return tempMap;
+                                                                }).exceptionally(ex->{
+                                                                    log.error( "在 cfAMDx3d 任務中發生異常: {}", ex.getMessage());
+                                                                    return new ConcurrentHashMap<>();
+                                                                });
+            momoRecorderMap.putAll(cf70Ti.get());
             momoRecorderMap.putAll(cf80.get());
-            Thread.sleep(fixedRateMill);
             momoRecorderMap.putAll(cf90.get());
+            momoRecorderMap.putAll(cfAMDx3d.get());
             Thread.sleep(fixedRateMill);
         }
 

@@ -6,6 +6,7 @@ spring:
 
 telegram:
   apiUrl: "https://api.telegram.org/"
+
   apiToken: "7892170107:AAHlR1hW9nxEr1Ztz-igoWFIQE3jhb5G2Rs" #@tw_ecomm_bull_bot
   chatId: "-4696262660" #Ecomm
 

@@ -27,7 +27,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <fork>true</fork> <!--設定為 true，表示在執行目標時，插件會在新的 JVM 進程中運行，這有助於避免與當前 Maven 進程的衝突-->
                     <mainClass>com.ecommerce.crawler.CrawlerApplication</mainClass>
                 </configuration>
                 <executions>
